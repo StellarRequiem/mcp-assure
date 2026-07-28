@@ -1,0 +1,10 @@
+Shipped mcp-assure: a plug-in, deny-by-default gate for MCP tool calls.
+
+Policy packs · velocity/blast limits · resource/audience checks · hash-chained receipts.
+The model proposes. The gate decides. DENY never executes the handler.
+
+Not a full SOC. Not “unbreakable.” Re-runnable: pytest + purple suite + host demo.
+CI green.
+
+https://github.com/StellarRequiem/mcp-assure
+https://xclusivexo.com/mcp-assurance/#mcp-assure
