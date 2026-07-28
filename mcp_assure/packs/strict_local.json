@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "id": "strict_local",
+    "description": "Strict local-host pack: tiny blast, no network-shaped tools, freeze-friendly.",
+    "version": 1
+  },
+  "tools": {
+    "echo": {
+      "max_blast": 1,
+      "required_args": ["text"],
+      "allowed_args": ["text"],
+      "max_arg_bytes": 4096,
+      "max_arg_depth": 2
+    },
+    "workspace_stat": {
+      "max_blast": 1,
+      "required_args": ["path"],
+      "allowed_args": ["path"],
+      "max_arg_bytes": 1024
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "authz_boundaries",
+  "pack": "mcp_authz_boundaries",
+  "steps": [
+    {
+      "tool": "http_get",
+      "arguments": {"url": "https://api.example.com/v1"},
+      "comment": "missing resource+audience"
+    },
+    {
+      "tool": "http_get",
+      "arguments": {"url": "https://api.example.com/v1"},
+      "resource": "https://evil.example/",
+      "audience": "mcp://local-agent"
+    },
+    {
+      "tool": "http_get",
+      "arguments": {"url": "https://api.example.com/v1"},
+      "resource": "https://api.example.com/",
+      "audience": "mcp://local-agent"
+    },
+    {
+      "tool": "forward_credential",
+      "arguments": {"target": "x", "claim": "y"},
+      "lab_mode": false
+    },
+    {
+      "tool": "admin_upsert",
+      "arguments": {"id": "1", "fields": {"name": "a"}, "role": "admin"}
+    },
+    {
+      "tool": "admin_upsert",
+      "arguments": {"id": "1", "fields": {"name": "a"}}
+    }
+  ],
+  "expect": {
+    "codes_include": [
+      "RESOURCE_REQUIRED",
+      "RESOURCE_MISMATCH",
+      "OK",
+      "LAB_REQUIRED",
+      "ARG_POLICY",
+      "DRY_RUN_ONLY"
+    ],
+    "no_execution": false,
+    "min_denies": 3
+  }
+}

@@ -5,6 +5,7 @@ The model proposes. The gate decides. Receipts remember.
 
 from .engine import AssureEngine, Verdict
 from .middleware import AssuredRunner, ToolDenied
+from .packs import list_packs, load_pack
 from .policy import (
     Decision,
     ToolCall,
@@ -13,7 +14,7 @@ from .policy import (
 )
 from .receipts import ReceiptChain
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "AssureEngine",
@@ -25,5 +26,7 @@ __all__ = [
     "ToolPolicy",
     "ToolPolicyRegistry",
     "Verdict",
+    "list_packs",
+    "load_pack",
     "__version__",
 ]

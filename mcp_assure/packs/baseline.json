@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "id": "baseline",
+    "description": "Conservative defaults for local agent hosts — explicit allowlist, no lab tools.",
+    "version": 1
+  },
+  "tools": {
+    "echo": {
+      "description": "Echo text (demo / health)",
+      "max_blast": 1,
+      "required_args": ["text"],
+      "allowed_args": ["text"],
+      "forbidden_args": ["token", "password", "api_key", "authorization"]
+    },
+    "read_file": {
+      "description": "Read a workspace-relative file",
+      "max_blast": 1,
+      "required_args": ["path"],
+      "allowed_args": ["path", "encoding"],
+      "forbidden_args": ["token", "password", "api_key"]
+    },
+    "list_dir": {
+      "description": "List a directory",
+      "max_blast": 1,
+      "required_args": ["path"],
+      "allowed_args": ["path"]
+    }
+  }
+}

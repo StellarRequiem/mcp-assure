@@ -1,6 +1,6 @@
 [project]
 name = "mcp-assure"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deny-by-default assurance runtime for MCP tool calls: policy, velocity, blast limits, hash-chained receipts."
 readme = "README.md"
 requires-python = ">=3.10"

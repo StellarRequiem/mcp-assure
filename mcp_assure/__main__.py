@@ -23,7 +23,34 @@ def main(argv: list[str] | None = None) -> int:
     d = sub.add_parser("demo", help="run a tiny local demo (no network)")
     d.add_argument("--json", action="store_true")
 
+    p_packs = sub.add_parser("packs", help="list built-in policy packs")
+    p_purple = sub.add_parser("purple", help="run purple stress fixtures")
+    p_purple.add_argument("--json", action="store_true")
+
     args = p.parse_args(argv)
+
+    if args.cmd == "packs":
+        from .packs import list_packs, load_pack_raw
+
+        for name in list_packs():
+            meta = (load_pack_raw(name).get("meta") or {})
+            print(f"{name:24} {meta.get('description', '')[:70]}")
+        return 0
+
+    if args.cmd == "purple":
+        from .purple import run_all
+
+        reports = run_all()
+        all_pass = True
+        if args.json:
+            print(json.dumps([r.as_dict() for r in reports], indent=2))
+        else:
+            for r in reports:
+                all_pass = all_pass and r.passed
+                mark = "PASS" if r.passed else "FAIL"
+                print(f"[{mark}] {r.fixture_id} — {r.as_dict()['summary']}")
+            print(f"\n# {len(reports)} fixture(s) — {'ALL PASS' if all_pass else 'FAILURES'}")
+        return 0 if all(r.passed for r in reports) else 1
 
     if args.cmd == "verify-receipts":
         ok, msg = ReceiptChain.verify_file(args.path)

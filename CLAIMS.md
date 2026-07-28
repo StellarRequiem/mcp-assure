@@ -13,6 +13,10 @@ against README and tests.
 | Model text cannot authorize a denied call | P8 |
 | Middleware does not execute tool on DENY/DRY_RUN | P3, P4 |
 | Zero runtime dependencies for the core package | `pyproject.toml` |
+| Built-in policy packs load and authorize only listed tools | `tests/test_control_plane_v1.py` |
+| Purple fixtures (unknown tool, authz bindings, velocity) pass | `python -m mcp_assure purple` |
+| Host dispatcher + decorator integration paths exist | integration tests |
+| Optional verity hook soft-fails without verity installed | verity hook tests |
 
 ## Not allowed (do not put on site/X yet)
 
@@ -28,9 +32,10 @@ against README and tests.
 ## Recommended public wording
 
 > **mcp-assure** is a plug-in, deny-by-default assurance layer for MCP-style tool
-> calls: policy, rate/blast limits, and hash-chained decision receipts. The model
-> proposes; the gate decides. It is not a full SOC and not a guarantee against
-> all agent misuse.
+> calls: policy packs, rate/blast limits, resource/audience binding checks, and
+> hash-chained decision receipts — with a re-runnable purple stress suite. The
+> model proposes; the gate decides. It is not a full SOC and not a guarantee
+> against all agent misuse.
 
 ## State
 

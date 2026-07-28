@@ -1,0 +1,16 @@
+{
+  "id": "velocity_flood",
+  "pack": "strict_local",
+  "tight_velocity": true,
+  "steps": [
+    {"tool": "echo", "arguments": {"text": "1"}, "source": "flood"},
+    {"tool": "echo", "arguments": {"text": "2"}, "source": "flood"},
+    {"tool": "echo", "arguments": {"text": "3"}, "source": "flood"},
+    {"tool": "echo", "arguments": {"text": "4"}, "source": "flood"},
+    {"tool": "echo", "arguments": {"text": "5"}, "source": "flood"}
+  ],
+  "expect": {
+    "codes_include": ["VELOCITY"],
+    "min_denies": 1
+  }
+}

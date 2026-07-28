@@ -6,7 +6,8 @@ The model proposes. **The gate decides.** Receipts remember.
 
 `mcp-assure` is a plug-in control plane you put **in front of tool execution**: policy catalog, argument constraints, optional resource/audience binding checks, velocity and blast limits, freeze mode, and **hash-chained decision receipts**. It is **not** a full SOC, not a scanner, and not a claim that all agent misuse is impossible.
 
-Built by [Alex Price / StellarRequiem](https://xclusivexo.com). Apache-2.0. **Zero runtime dependencies.**
+Built by [Alex Price / StellarRequiem](https://xclusivexo.com). Apache-2.0. **Zero runtime dependencies** (core).  
+Version **0.2** adds policy packs, host/decorator integration, purple stress fixtures, and an optional verity hook.
 
 ## Why this exists
 
@@ -94,10 +95,55 @@ call = tool_call_from_mcp({"name": "echo", "arguments": {"text": "hi"}})
 print(engine.evaluate(call).as_dict())
 ```
 
+## Policy packs
+
+```python
+from mcp_assure import AssureEngine, load_pack
+
+engine = AssureEngine(load_pack("baseline"))
+# also: mcp_authz_boundaries, strict_local
+```
+
+```bash
+python -m mcp_assure packs
+```
+
+`mcp_authz_boundaries` encodes **runtime** gates for resource/audience-style failures (the class of bugs mcp-bench measures in scanners) — call-time enforcement, not a scanner replacement.
+
+## Host / FastMCP integration
+
+```python
+from mcp_assure.integrations import AssuredToolDispatcher, assure_callable
+# See mcp_assure/integrations/fastmcp_notes.py for FastMCP patterns.
+```
+
+Dispatcher is the usual host hook for `tools/call`. Decorators wrap kwargs-style tool functions before registration.
+
+## Purple stress suite
+
+Synthetic adversarial sequences (no network):
+
+```bash
+python -m mcp_assure purple
+```
+
+## Optional verity hook
+
+If `verity-core` is installed, claim-like tool results can be soft-checked:
+
+```python
+from mcp_assure.verity_hook import maybe_verify_tool_result
+maybe_verify_tool_result({"accuracy": 0.99, "sample_size": 5})
+```
+
+Not required; no-ops cleanly when verity is absent.
+
 ## CLI
 
 ```bash
 python -m mcp_assure demo
+python -m mcp_assure packs
+python -m mcp_assure purple
 python -m mcp_assure verify-receipts ./mcp-assure-receipts.jsonl
 ```
 

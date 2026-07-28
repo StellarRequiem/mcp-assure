@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "id": "mcp_authz_boundaries",
+    "description": "Runtime policies aligned to MCP authz/resource/audience boundary classes measured in mcp-bench (defense-in-depth at call time, not a scanner).",
+    "version": 1,
+    "related": [
+      "missing-resource-indicator",
+      "foreign-audience-token-accepted",
+      "resource-prefix-canonicalization-bypass",
+      "confused-deputy-forwarded-credential"
+    ],
+    "note": "These policies enforce binding on tools that *opt in* via require_resource / require_audience. They do not rewrite OAuth servers."
+  },
+  "tools": {
+    "http_get": {
+      "description": "HTTP GET only against declared resource prefixes",
+      "max_blast": 2,
+      "required_args": ["url"],
+      "allowed_args": ["url", "timeout"],
+      "forbidden_args": ["token", "password", "authorization", "cookie"],
+      "require_resource": true,
+      "allowed_resources": [
+        "https://api.example.com/",
+        "https://httpbin.org/"
+      ],
+      "require_audience": true,
+      "allowed_audiences": ["mcp://local-agent", "mcp://my-server"]
+    },
+    "fetch_resource": {
+      "description": "Fetch MCP resource with required resource indicator",
+      "max_blast": 1,
+      "required_args": ["uri"],
+      "allowed_args": ["uri"],
+      "require_resource": true,
+      "allowed_resources": ["mcp://my-server/", "resource://workspace/"]
+    },
+    "forward_credential": {
+      "description": "Lab-only; confused-deputy class — blocked unless lab_mode",
+      "max_blast": 1,
+      "lab_only": true,
+      "required_args": ["target", "claim"],
+      "allowed_args": ["target", "claim"],
+      "forbidden_args": ["raw_token", "password"]
+    },
+    "admin_upsert": {
+      "description": "High-blast mutation — dry_run_only by default (mass-assignment pressure)",
+      "max_blast": 1,
+      "dry_run_only": true,
+      "required_args": ["id"],
+      "allowed_args": ["id", "fields"],
+      "forbidden_args": ["role", "owner_id", "is_admin"]
+    }
+  }
+}
