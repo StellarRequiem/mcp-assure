@@ -1,5 +1,8 @@
 # mcp-assure
 
+[![ci](https://github.com/StellarRequiem/mcp-assure/actions/workflows/ci.yml/badge.svg)](https://github.com/StellarRequiem/mcp-assure/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+
 **Deny-by-default assurance runtime for MCP-style tool calls.**
 
 The model proposes. **The gate decides.** Receipts remember.
@@ -9,6 +12,8 @@ The model proposes. **The gate decides.** Receipts remember.
 Built by [Alex Price / StellarRequiem](https://xclusivexo.com). Apache-2.0. **Zero runtime dependencies** (core).  
 Version **0.2** adds policy packs, host/decorator integration, purple stress fixtures, and an optional verity hook.
 
+**Public page:** [xclusivexo.com/mcp-assurance/#mcp-assure](https://xclusivexo.com/mcp-assurance/#mcp-assure)
+
 ## Why this exists
 
 MCP hosts give agents tools. Tools are power. Under MCP **2026-07-28**, more security responsibility sits with implementers (stateless core, auth expectations, extensions). Scanners help at build time; **runtime authorization** is still required at the moment of `tools/call`.
@@ -16,8 +21,9 @@ MCP hosts give agents tools. Tools are power. Under MCP **2026-07-28**, more sec
 ## Install
 
 ```bash
-pip install -e ".[dev]"    # from a checkout
-# later: pip install mcp-assure
+pip install "git+https://github.com/StellarRequiem/mcp-assure"
+# from a checkout:
+pip install -e ".[dev]"
 ```
 
 ## Real host demo (local)
