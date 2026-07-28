@@ -5,6 +5,8 @@ Simulates an MCP host's tools/call path:
 
   model/tool request → AssuredToolDispatcher → handler (only if ALLOW)
 
+Also demos AdaptiveGate (proactive campaign watch) on a second engine.
+
 Run:
   python examples/host_demo.py
 """
@@ -15,7 +17,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from mcp_assure import AssureEngine, ToolCall
+from mcp_assure import AdaptiveGate, AssureEngine, CampaignWatch, ToolCall
 from mcp_assure.integrations import AssuredToolDispatcher
 from mcp_assure.packs import load_pack
 from mcp_assure.receipts import ReceiptChain
@@ -26,6 +28,7 @@ def main() -> int:
     reg = load_pack("baseline")
     with tempfile.TemporaryDirectory() as td:
         receipts = Path(td) / "host-receipts.jsonl"
+        freeze = Path(td) / "FREEZE"
         engine = AssureEngine(reg, receipts_path=str(receipts))
 
         def echo(args: dict) -> dict:
@@ -86,6 +89,39 @@ def main() -> int:
             f"[+] {v.decision.value:7} {v.code:16} "
             f"model_note attack on unknown tool"
         )
+
+        # --- Proactive adaptive path (host should wire this in front of tools) ---
+        print("\n=== Adaptive campaign session (proactive) ===\n")
+        eval_eng = AssureEngine(
+            load_pack("agent_eval_strict"),
+            receipts_path=str(Path(td) / "adaptive-receipts.jsonl"),
+            freeze_path=str(freeze),
+            freeze_allow=frozenset({"echo", "health"}),
+        )
+        gate = AdaptiveGate(
+            eval_eng,
+            watch=CampaignWatch(escalate_score=5.0, freeze_score=10.0),
+            auto_freeze=True,
+        )
+        adaptive_session = [
+            ToolCall(tool=f"probe_{i}", arguments={}, source=f"synth.sandbox.{i}")
+            for i in range(6)
+        ] + [
+            ToolCall(
+                tool="echo",
+                arguments={
+                    "text": "{{ cycler.__init__.__globals__.__builtins__.exec('x') }}"
+                },
+                source="synth.sandbox.x",
+            )
+        ]
+        for i, call in enumerate(adaptive_session, 1):
+            ar = gate.evaluate(call)
+            print(
+                f"[{i}] {ar.verdict.decision.value:8} {ar.verdict.code:22} "
+                f"rec={ar.snapshot.recommendation} score={ar.snapshot.score:.1f}"
+            )
+        print(f"freeze_file={'yes' if freeze.is_file() else 'no'}")
 
         ok, msg = ReceiptChain.verify_file(str(receipts))
         print(f"\nreceipts: {msg}")

@@ -100,38 +100,46 @@ class AdaptiveGate:
         base = self.engine.evaluate(call)
         snap = self._observe(call, base)
 
-        # Never soften denies
-        if base.decision is Decision.DENY:
-            if snap.recommendation in ("escalate", "freeze") and self.on_signal:
-                self.on_signal(snap)
-            return AdaptiveResult(
-                verdict=base, snapshot=snap, adapted=False, adaptation=None
-            )
-
-        # Upgrade ALLOW / DRY_RUN / ESCALATE based on campaign posture
+        # Campaign freeze: engage even when this call was already DENY
+        # (swarm of probes should lock the plane before a later ALLOW sneaks through)
         if snap.recommendation == "freeze":
+            engaged = False
             if self.auto_freeze and self.engine.freeze_path:
-                self._engage_freeze()
-            v = self.engine._finish(  # noqa: SLF001
-                call,
-                Decision.DENY,
-                "CAMPAIGN_FREEZE",
-                f"adaptive freeze: campaign score={snap.score:.1f} "
-                f"codes={snap.top_codes}",
-                meta_extra={
-                    "proactive": True,
-                    "campaign_score": snap.score,
-                    "recommendation": "freeze",
-                },
-            )
-            # re-observe freeze decision (counts as adaptive deny)
-            snap = self._observe(call, v)
-            adaptation = "freeze"
-            adapted = True
+                engaged = self._engage_freeze()
+            if base.decision is Decision.ALLOW or base.decision is Decision.DRY_RUN:
+                v = self.engine._finish(  # noqa: SLF001
+                    call,
+                    Decision.DENY,
+                    "CAMPAIGN_FREEZE",
+                    f"adaptive freeze: campaign score={snap.score:.1f} "
+                    f"codes={snap.top_codes}",
+                    meta_extra={
+                        "proactive": True,
+                        "campaign_score": snap.score,
+                        "recommendation": "freeze",
+                    },
+                )
+                snap = self._observe(call, v)
+                if self.on_signal:
+                    self.on_signal(snap)
+                return AdaptiveResult(
+                    verdict=v, snapshot=snap, adapted=True, adaptation="freeze"
+                )
             if self.on_signal:
                 self.on_signal(snap)
             return AdaptiveResult(
-                verdict=v, snapshot=snap, adapted=adapted, adaptation=adaptation
+                verdict=base,
+                snapshot=snap,
+                adapted=engaged,
+                adaptation="freeze" if engaged else None,
+            )
+
+        # Never soften denies
+        if base.decision is Decision.DENY:
+            if snap.recommendation == "escalate" and self.on_signal:
+                self.on_signal(snap)
+            return AdaptiveResult(
+                verdict=base, snapshot=snap, adapted=False, adaptation=None
             )
 
         if snap.recommendation == "escalate" and base.decision is Decision.ALLOW:
@@ -169,10 +177,10 @@ class AdaptiveGate:
         )
         return self.watch.snapshot()
 
-    def _engage_freeze(self) -> None:
+    def _engage_freeze(self) -> bool:
         path = self.engine.freeze_path
         if not path:
-            return
+            return False
         parent = os.path.dirname(path)
         if parent:
             os.makedirs(parent, exist_ok=True)
@@ -181,3 +189,4 @@ class AdaptiveGate:
         # ensure engine honors allowlist
         if not self.engine.freeze_allow:
             self.engine.freeze_allow = self.freeze_allow
+        return True
