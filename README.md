@@ -10,7 +10,7 @@ The model proposes. **The gate decides.** Receipts remember.
 `mcp-assure` is a plug-in control plane you put **in front of tool execution**: policy catalog, argument constraints, optional resource/audience binding checks, velocity and blast limits, freeze mode, and **hash-chained decision receipts**. It is **not** a full SOC, not a scanner, and not a claim that all agent misuse is impossible.
 
 Built by [Alex Price / StellarRequiem](https://xclusivexo.com). Apache-2.0. **Zero runtime dependencies** (core).  
-Version **0.2** adds policy packs, host/decorator integration, purple stress fixtures, and an optional verity hook.
+Version **0.2.1** adds policy packs, host/decorator integration, **FastMCP `on_call_tool` middleware**, purple stress fixtures, and an optional verity hook.
 
 **Public page:** [xclusivexo.com/mcp-assurance/#mcp-assure](https://xclusivexo.com/mcp-assurance/#mcp-assure)
 
@@ -22,9 +22,14 @@ MCP hosts give agents tools. Tools are power. Under MCP **2026-07-28**, more sec
 
 ```bash
 pip install "git+https://github.com/StellarRequiem/mcp-assure"
+# optional FastMCP middleware:
+pip install "git+https://github.com/StellarRequiem/mcp-assure#egg=mcp-assure[fastmcp]"
 # from a checkout:
 pip install -e ".[dev]"
+pip install -e ".[fastmcp]"   # if using FastMCP servers
 ```
+
+PyPI: package is **publication-ready** (wheel builds clean); release when operator publishes.
 
 ## Real host demo (local)
 
@@ -130,10 +135,32 @@ python -m mcp_assure packs
 
 ```python
 from mcp_assure.integrations import AssuredToolDispatcher, assure_callable
-# See mcp_assure/integrations/fastmcp_notes.py for FastMCP patterns.
+# See mcp_assure/integrations/fastmcp_notes.py for patterns.
 ```
 
 Dispatcher is the usual host hook for `tools/call`. Decorators wrap kwargs-style tool functions before registration.
+
+### FastMCP middleware (`on_call_tool`)
+
+Requires `pip install "mcp-assure[fastmcp]"` (FastMCP ≥2.9):
+
+```python
+from fastmcp import FastMCP
+from mcp_assure import AssureEngine
+from mcp_assure.packs import load_pack
+from mcp_assure.integrations import build_assure_middleware
+
+engine = AssureEngine(load_pack("baseline"), receipts_path="receipts.jsonl")
+mcp = FastMCP("secured")
+mcp.add_middleware(build_assure_middleware(engine))
+
+@mcp.tool
+def echo(text: str) -> dict:
+    return {"echo": text}
+```
+
+On DENY the middleware raises `ToolError` and **does not** call the tool handler.  
+Demo: `python examples/fastmcp_assured.py`
 
 ## Purple stress suite
 

@@ -16,6 +16,7 @@ against README and tests.
 | Built-in policy packs load and authorize only listed tools | `tests/test_control_plane_v1.py` |
 | Purple fixtures (unknown tool, authz bindings, velocity) pass | `python -m mcp_assure purple` |
 | Host dispatcher + decorator integration paths exist | integration tests |
+| FastMCP `on_call_tool` middleware denies unknown tools without calling handler | `tests/test_fastmcp_mw.py` + async smoke |
 | Optional verity hook soft-fails without verity installed | verity hook tests |
 
 ## Not allowed (do not put on site/X yet)

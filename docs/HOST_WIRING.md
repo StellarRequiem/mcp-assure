@@ -24,7 +24,24 @@ def on_tools_call(payload: dict):
 
 ## FastMCP-style
 
-Wrap the tool function before registration (see `mcp_assure/integrations/fastmcp_notes.py`):
+### A — middleware on every tools/call (preferred when you own the server)
+
+```python
+from fastmcp import FastMCP
+from mcp_assure import AssureEngine
+from mcp_assure.packs import load_pack
+from mcp_assure.integrations import build_assure_middleware
+
+engine = AssureEngine(load_pack("baseline"), receipts_path="receipts.jsonl")
+mcp = FastMCP("secured")
+mcp.add_middleware(build_assure_middleware(engine))
+```
+
+DENY → FastMCP `ToolError`; handler never runs. Requires `pip install "mcp-assure[fastmcp]"`.
+
+Demo: `python examples/fastmcp_assured.py`
+
+### B — wrap individual tools before registration
 
 ```python
 from mcp_assure.integrations import assure_callable

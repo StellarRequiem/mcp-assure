@@ -4,7 +4,20 @@ FastMCP and official SDKs evolve quickly (especially around the 2026-07-28
 spec). mcp-assure stays SDK-agnostic: wrap the function that *executes* a
 tool, not the wire protocol.
 
-## Pattern A — wrap handlers before registration
+## Pattern A — FastMCP middleware (preferred)
+
+```python
+from fastmcp import FastMCP
+from mcp_assure import AssureEngine
+from mcp_assure.packs import load_pack
+from mcp_assure.integrations import build_assure_middleware
+
+engine = AssureEngine(load_pack("baseline"), receipts_path="receipts.jsonl")
+mcp = FastMCP("secured")
+mcp.add_middleware(build_assure_middleware(engine))
+```
+
+## Pattern B — wrap handlers before registration
 
 ```python
 from mcp_assure import AssureEngine, ToolPolicy, ToolPolicyRegistry
@@ -21,7 +34,7 @@ def add(a: int, b: int) -> int:
 # Then register ``add`` with your MCP server / FastMCP as usual.
 ```
 
-## Pattern B — host dispatch intercept
+## Pattern C — host dispatch intercept
 
 Wherever the host would run ``tools/call``:
 
@@ -36,7 +49,7 @@ if not out["executed"]:
 return out["result"]
 ```
 
-## Pattern C — policy from pack
+## Pattern D — policy from pack
 
 ```python
 from mcp_assure.packs import load_pack
