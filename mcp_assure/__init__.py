@@ -3,6 +3,8 @@
 The model proposes. The gate decides. Receipts remember.
 """
 
+from .adaptive import AdaptiveGate, AdaptiveResult
+from .campaign import CampaignSnapshot, CampaignWatch, arg_smell_scan
 from .engine import AssureEngine, Verdict
 from .middleware import AssuredRunner, ToolDenied
 from .packs import list_packs, load_pack
@@ -14,11 +16,15 @@ from .policy import (
 )
 from .receipts import ReceiptChain
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __all__ = [
+    "AdaptiveGate",
+    "AdaptiveResult",
     "AssureEngine",
     "AssuredRunner",
+    "CampaignSnapshot",
+    "CampaignWatch",
     "Decision",
     "ReceiptChain",
     "ToolCall",
@@ -26,6 +32,7 @@ __all__ = [
     "ToolPolicy",
     "ToolPolicyRegistry",
     "Verdict",
+    "arg_smell_scan",
     "list_packs",
     "load_pack",
     "__version__",

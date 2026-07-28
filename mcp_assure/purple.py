@@ -69,6 +69,7 @@ def run_fixture(fixture_id: str) -> PurpleReport:
     fix = load_fixture(fixture_id)
     pack_name = fix.get("pack", "baseline")
     registry = load_pack(pack_name)
+    mode = str(fix.get("mode") or "static")
 
     tight = bool(fix.get("tight_velocity"))
     if tight:
@@ -84,14 +85,33 @@ def run_fixture(fixture_id: str) -> PurpleReport:
 
     eng = AssureEngine(registry, velocity=vel)
     executed = {"n": 0}
+    campaign_snap: dict[str, Any] | None = None
 
     def _handler(_args: dict[str, Any]) -> str:
         executed["n"] += 1
         return "executed"
 
-    # Register handlers for all pack tools so ALLOW would execute if we used runner
     handlers = {name: _handler for name in registry.names()}
     runner = AssuredRunner(eng, handlers)
+
+    adaptive = None
+    if mode == "adaptive":
+        from mcp_assure.adaptive import AdaptiveGate
+        from mcp_assure.campaign import CampaignWatch
+
+        adaptive = AdaptiveGate(
+            eng,
+            watch=CampaignWatch(
+                window_seconds=300.0,
+                escalate_score=5.0,
+                freeze_score=10.0,
+                swarm_unique_sources=4,
+                spray_unique_tools=4,
+                unknown_burst=3,
+            ),
+            auto_freeze=False,
+            block_critical_arg_smells=True,
+        )
 
     transcript: list[dict[str, Any]] = []
     for step in fix.get("steps") or []:
@@ -106,7 +126,19 @@ def run_fixture(fixture_id: str) -> PurpleReport:
             audience=step.get("audience"),
             model_note=step.get("model_note"),
         )
-        if step.get("use_runner", True):
+        if adaptive is not None:
+            ar = adaptive.evaluate(call)
+            campaign_snap = ar.snapshot.as_dict()
+            # adaptive path never executes handlers (gate only)
+            row = {
+                "tool": call.tool,
+                "decision": ar.verdict.decision.value,
+                "code": ar.verdict.code,
+                "executed": False,
+                "adapted": ar.adapted,
+                "adaptation": ar.adaptation,
+            }
+        elif step.get("use_runner", True):
             out = runner.invoke(call)
             row = {
                 "tool": call.tool,
@@ -123,6 +155,9 @@ def run_fixture(fixture_id: str) -> PurpleReport:
                 "executed": False,
             }
         transcript.append(row)
+
+    if adaptive is not None and campaign_snap is None:
+        campaign_snap = adaptive.watch.snapshot().as_dict()
 
     expect = fix.get("expect") or {}
     checks: list[CheckResult] = []
@@ -164,7 +199,6 @@ def run_fixture(fixture_id: str) -> PurpleReport:
         )
 
     if expect.get("model_note_ineffective"):
-        # any step with model_note that targeted unknown tool must still DENY
         bad = [
             r
             for r, s in zip(transcript, fix.get("steps") or [])
@@ -177,6 +211,43 @@ def run_fixture(fixture_id: str) -> PurpleReport:
                 "model_note must not authorize unknown tools",
             )
         )
+
+    # --- proactive / adaptive campaign expectations ---
+    if campaign_snap is not None:
+        if "campaign_min_score" in expect:
+            need = float(expect["campaign_min_score"])
+            got = float(campaign_snap.get("score") or 0)
+            checks.append(
+                CheckResult(
+                    "campaign_min_score",
+                    got >= need,
+                    f"score={got} need>={need} rec={campaign_snap.get('recommendation')}",
+                )
+            )
+        if "campaign_recommendation_in" in expect:
+            want = set(expect["campaign_recommendation_in"])
+            got = str(campaign_snap.get("recommendation") or "")
+            checks.append(
+                CheckResult(
+                    "campaign_recommendation_in",
+                    got in want,
+                    f"got {got!r} want one of {sorted(want)}",
+                )
+            )
+        if "campaign_codes_any" in expect:
+            want = set(expect["campaign_codes_any"])
+            have = set(campaign_snap.get("top_codes") or [])
+            # also scan signal codes
+            for s in campaign_snap.get("signals") or []:
+                if isinstance(s, dict) and s.get("code"):
+                    have.add(str(s["code"]))
+            checks.append(
+                CheckResult(
+                    "campaign_codes_any",
+                    bool(want & have),
+                    f"want any of {sorted(want)} have {sorted(have)}",
+                )
+            )
 
     passed = all(c.passed for c in checks) if checks else False
     return PurpleReport(

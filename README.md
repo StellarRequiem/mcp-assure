@@ -10,7 +10,7 @@ The model proposes. **The gate decides.** Receipts remember.
 `mcp-assure` is a plug-in control plane you put **in front of tool execution**: policy catalog, argument constraints, optional resource/audience binding checks, velocity and blast limits, freeze mode, and **hash-chained decision receipts**. It is **not** a full SOC, not a scanner, and not a claim that all agent misuse is impossible.
 
 Built by [Alex Price / StellarRequiem](https://xclusivexo.com). Apache-2.0. **Zero runtime dependencies** (core).  
-Version **0.2.1** adds policy packs, host/decorator integration, **FastMCP `on_call_tool` middleware**, purple stress fixtures, and an optional verity hook.
+Version **0.2.2** adds **proactive campaign detection** (swarm/spray/path/template smells → escalate/freeze), `agent_eval_strict` pack, FastMCP middleware, policy packs, purple stress fixtures, and an optional verity hook.
 
 **Public page:** [xclusivexo.com/mcp-assurance/#mcp-assure](https://xclusivexo.com/mcp-assurance/#mcp-assure)
 
@@ -161,9 +161,34 @@ def echo(text: str) -> dict:
 On DENY the middleware raises `ToolError` and **does not** call the tool handler.  
 Demo: `python examples/fastmcp_assured.py`
 
+## Proactive campaign watch (adaptive)
+
+Static allowlists are necessary but not sufficient: agentic campaigns hide in
+**volume and shape**. Wrap the engine with `AdaptiveGate`:
+
+```python
+from mcp_assure import AssureEngine, AdaptiveGate, ToolCall
+from mcp_assure.packs import load_pack
+
+engine = AssureEngine(load_pack("agent_eval_strict"), freeze_path="./FREEZE")
+gate = AdaptiveGate(engine, auto_freeze=True)
+out = gate.evaluate(ToolCall(tool="echo", arguments={"text": "ok"}))
+print(out.snapshot.recommendation, out.verdict.code)
+```
+
+- **Pre-block:** path/IMDS, template/RCE-class, gzip+base64 packer markers → `PROACTIVE_ARG_BLOCK`
+- **Window score:** swarm sources, tool spray, unknown-tool burst, probe-dominated traffic
+- **Adapt:** `escalate` (human before execute) or `freeze` (touch freeze file; only freeze-allow tools)
+
+```bash
+python -m mcp_assure campaign-demo
+```
+
+See [`docs/PROACTIVE_DEFENSE.md`](./docs/PROACTIVE_DEFENSE.md).
+
 ## Purple stress suite
 
-Synthetic adversarial sequences (no network):
+Synthetic adversarial sequences (no network), including adaptive fixtures:
 
 ```bash
 python -m mcp_assure purple

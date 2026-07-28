@@ -27,6 +27,12 @@ def main(argv: list[str] | None = None) -> int:
     p_purple = sub.add_parser("purple", help="run purple stress fixtures")
     p_purple.add_argument("--json", action="store_true")
 
+    p_camp = sub.add_parser(
+        "campaign-demo",
+        help="proactive campaign watch demo (synthetic swarm; no network)",
+    )
+    p_camp.add_argument("--json", action="store_true")
+
     args = p.parse_args(argv)
 
     if args.cmd == "packs":
@@ -51,6 +57,56 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"[{mark}] {r.fixture_id} — {r.as_dict()['summary']}")
             print(f"\n# {len(reports)} fixture(s) — {'ALL PASS' if all_pass else 'FAILURES'}")
         return 0 if all(r.passed for r in reports) else 1
+
+    if args.cmd == "campaign-demo":
+        from .adaptive import AdaptiveGate
+        from .campaign import CampaignWatch
+        from .packs import load_pack
+
+        eng = AssureEngine(load_pack("agent_eval_strict"))
+        gate = AdaptiveGate(
+            eng,
+            watch=CampaignWatch(escalate_score=5.0, freeze_score=12.0),
+            auto_freeze=False,
+        )
+        rows = []
+        # synthetic ephemeral-source recon spray (HF-class shape, not a live attack)
+        for i in range(8):
+            ar = gate.evaluate(
+                ToolCall(
+                    tool=f"probe_{i}",
+                    arguments={"path": "/proc/self/environ"} if i == 3 else {},
+                    source=f"synth.sandbox.{i}",
+                    actor="agent",
+                )
+            )
+            rows.append(ar.as_dict())
+        # template-class arg
+        ar = gate.evaluate(
+            ToolCall(
+                tool="echo",
+                arguments={
+                    "text": "{{ cycler.__init__.__globals__.__builtins__.exec('x') }}"
+                },
+                source="synth.sandbox.x",
+            )
+        )
+        rows.append(ar.as_dict())
+        snap = gate.watch.snapshot().as_dict()
+        if args.json:
+            print(json.dumps({"steps": rows, "final": snap}, indent=2))
+        else:
+            for r in rows:
+                v = r["verdict"]
+                print(
+                    f"{v['decision']:8} {v['code']:22} "
+                    f"adapted={r['adapted']} score={r['campaign']['score']}"
+                )
+            print(
+                f"\nfinal recommendation={snap['recommendation']} "
+                f"score={snap['score']} codes={snap['top_codes']}"
+            )
+        return 0
 
     if args.cmd == "verify-receipts":
         ok, msg = ReceiptChain.verify_file(args.path)

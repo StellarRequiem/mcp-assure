@@ -17,6 +17,8 @@ against README and tests.
 | Purple fixtures (unknown tool, authz bindings, velocity) pass | `python -m mcp_assure purple` |
 | Host dispatcher + decorator integration paths exist | integration tests |
 | FastMCP `on_call_tool` middleware denies unknown tools without calling handler | `tests/test_fastmcp_mw.py` + async smoke |
+| Proactive arg smells (path/template/packer) can DENY before handler | `tests/test_campaign_adaptive.py` |
+| Campaign watch scores swarm/spray; adaptive escalate/freeze path exists | purple adaptive fixtures + campaign tests |
 | Optional verity hook soft-fails without verity installed | verity hook tests |
 
 ## Not allowed (do not put on site/X yet)
@@ -28,6 +30,7 @@ against README and tests.
 | “CVE-proof” / scanner replacement | mcp-bench shows different problem; this is a runtime gate |
 | “OAuth complete” / “implements full 2026-07-28 auth” | We check bindings when provided; we are not an AS |
 | “Proven in production at scale” | No public deploy proof yet |
+| “Would have stopped the OpenAI/HF incident end-to-end” | Different surfaces (data plane, K8s, mesh); we only gate mediated tool calls |
 | Any win-rate / detection-rate % without holdout study | N/A and forbidden |
 
 ## Recommended public wording
