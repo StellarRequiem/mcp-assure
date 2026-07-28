@@ -31,4 +31,6 @@ See [`THREAT_MODEL.md`](./THREAT_MODEL.md).
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | yes       |
+| 0.3.x   | yes (current) |
+| 0.2.x   | yes |
+| 0.1.x   | security fixes only |

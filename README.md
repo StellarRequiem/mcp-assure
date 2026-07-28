@@ -1,22 +1,23 @@
 # mcp-assure
 
 [![ci](https://github.com/StellarRequiem/mcp-assure/actions/workflows/ci.yml/badge.svg)](https://github.com/StellarRequiem/mcp-assure/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/mcp-assure.svg)](https://pypi.org/project/mcp-assure/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
-**Deny-by-default assurance runtime for MCP-style tool calls.**
+**Open-source security CLI + runtime for MCP-style agent tool calls.**
 
 The model proposes. **The gate decides.** Receipts remember.
 
-`mcp-assure` is a plug-in control plane you put **in front of tool execution**: policy catalog, argument constraints, optional resource/audience binding checks, velocity and blast limits, freeze mode, and **hash-chained decision receipts**. It is **not** a full SOC, not a scanner, and not a claim that all agent misuse is impossible.
+`mcp-assure` is a **local** control plane you put **in front of tool execution**: policy catalog, argument constraints, optional resource/audience binding checks, velocity and blast limits, freeze mode, **proactive campaign scoring**, and **hash-chained decision receipts**. It is **not** a full SOC, not a hosted vuln scanner, and not a claim that all agent misuse is impossible.
 
 Built by [Alex Price / StellarRequiem](https://xclusivexo.com). Apache-2.0. **Zero runtime dependencies** (core).  
-Version **0.2.2** adds **proactive campaign detection** (swarm/spray/path/template smells → escalate/freeze), `agent_eval_strict` pack, FastMCP middleware, policy packs, purple stress fixtures, and an optional verity hook.
+**v0.3.0** — security CLI surface (`status` / `check` / `evaluate`) aligned with the open-security-CLI moment, without cloning cloud scanners. See [docs/VS_CODEX_SECURITY.md](./docs/VS_CODEX_SECURITY.md).
 
 **Public page:** [xclusivexo.com/mcp-assurance/#mcp-assure](https://xclusivexo.com/mcp-assurance/#mcp-assure)
 
 ## Why this exists
 
-MCP hosts give agents tools. Tools are power. Under MCP **2026-07-28**, more security responsibility sits with implementers (stateless core, auth expectations, extensions). Scanners help at build time; **runtime authorization** is still required at the moment of `tools/call`.
+MCP hosts give agents tools. Tools are power. Under MCP **2026-07-28**, more security responsibility sits with implementers. **Code scanners** help at build time; **runtime authorization** is still required at the moment of `tools/call`. Open security CLIs that only find bugs in git trees leave the live agent loop ungated — this project fills that layer.
 
 ## Install
 
@@ -29,6 +30,22 @@ pip install "git+https://github.com/StellarRequiem/mcp-assure"
 # from a checkout:
 pip install -e ".[dev,fastmcp]"
 ```
+
+## Security CLI (local, no API key)
+
+```bash
+mcp-assure status                 # what this is / is not
+mcp-assure check                  # purple + synthetic campaign detector (CI entry)
+mcp-assure evaluate --tool echo --args-json '{"text":"hi"}' --pack baseline
+mcp-assure evaluate --tool read_file --args-json '{"path":"/proc/self/environ"}' --adaptive
+mcp-assure purple
+mcp-assure campaign
+mcp-assure packs
+mcp-assure verify-receipts ./mcp-assure-receipts.jsonl
+mcp-assure demo
+```
+
+`mcp-assure check` exits non-zero if control-plane fixtures fail — use it in CI the way other security CLIs use `scan`, but for **gate health**, not SAST.
 
 ## Real host demo (local)
 

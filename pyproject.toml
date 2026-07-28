@@ -1,7 +1,7 @@
 [project]
 name = "mcp-assure"
-version = "0.2.2"
-description = "Deny-by-default assurance runtime for MCP tool calls: policy, velocity, blast limits, hash-chained receipts."
+version = "0.3.0"
+description = "Open-source security CLI and runtime for MCP-style agent tool calls: deny-by-default policy, adaptive campaign watch, hash-chained receipts."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }

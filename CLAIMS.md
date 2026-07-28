@@ -19,6 +19,7 @@ against README and tests.
 | FastMCP `on_call_tool` middleware denies unknown tools without calling handler | `tests/test_fastmcp_mw.py` + async smoke |
 | Proactive arg smells (path/template/packer) can DENY before handler | `tests/test_campaign_adaptive.py` |
 | Campaign watch scores swarm/spray; adaptive escalate/freeze path exists | purple adaptive fixtures + campaign tests |
+| Security CLI (`status` / `check` / `evaluate`) is local and re-runnable | `mcp-assure check` in CI + CLI tests |
 | Optional verity hook soft-fails without verity installed | verity hook tests |
 
 ## Not allowed (do not put on site/X yet)
@@ -31,6 +32,7 @@ against README and tests.
 | “OAuth complete” / “implements full 2026-07-28 auth” | We check bindings when provided; we are not an AS |
 | “Proven in production at scale” | No public deploy proof yet |
 | “Would have stopped the OpenAI/HF incident end-to-end” | Different surfaces (data plane, K8s, mesh); we only gate mediated tool calls |
+| “Open-source alternative to Codex Security” (unqualified) | Different product class — use docs/VS_CODEX_SECURITY.md wording only |
 | Any win-rate / detection-rate % without holdout study | N/A and forbidden |
 
 ## Recommended public wording
