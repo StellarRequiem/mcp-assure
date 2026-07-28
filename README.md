@@ -21,15 +21,14 @@ MCP hosts give agents tools. Tools are power. Under MCP **2026-07-28**, more sec
 ## Install
 
 ```bash
-pip install "git+https://github.com/StellarRequiem/mcp-assure"
+pip install mcp-assure
 # optional FastMCP middleware:
-pip install "git+https://github.com/StellarRequiem/mcp-assure#egg=mcp-assure[fastmcp]"
+pip install "mcp-assure[fastmcp]"
+# from git (development tip):
+pip install "git+https://github.com/StellarRequiem/mcp-assure"
 # from a checkout:
-pip install -e ".[dev]"
-pip install -e ".[fastmcp]"   # if using FastMCP servers
+pip install -e ".[dev,fastmcp]"
 ```
-
-PyPI: package is **publication-ready** (wheel builds clean); release when operator publishes.
 
 ## Real host demo (local)
 
