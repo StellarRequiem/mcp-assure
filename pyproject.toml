@@ -1,6 +1,6 @@
 [project]
 name = "mcp-assure"
-version = "0.3.0"
+version = "0.3.1"
 description = "Open-source security CLI and runtime for MCP-style agent tool calls: deny-by-default policy, adaptive campaign watch, hash-chained receipts."
 readme = "README.md"
 requires-python = ">=3.10"

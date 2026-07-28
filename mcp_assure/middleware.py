@@ -46,8 +46,13 @@ class AssuredRunner:
         call: ToolCall,
         *,
         raise_on_deny: bool = False,
+        pre_verdict: Verdict | None = None,
     ) -> dict[str, Any]:
         """Authorize then optionally execute.
+
+        If ``pre_verdict`` is provided (e.g. from AdaptiveGate), it is used and
+        the engine is not re-evaluated — avoids double receipts and keeps a
+        single choke point for hosts that already authorized.
 
         Returns:
           {
@@ -57,7 +62,7 @@ class AssuredRunner:
             "error": <str or None>
           }
         """
-        verdict = self.engine.evaluate(call)
+        verdict = pre_verdict if pre_verdict is not None else self.engine.evaluate(call)
         out: dict[str, Any] = {
             "verdict": verdict.as_dict(),
             "executed": False,

@@ -156,6 +156,20 @@ from mcp_assure.integrations import AssuredToolDispatcher, assure_callable
 
 Dispatcher is the usual host hook for `tools/call`. Decorators wrap kwargs-style tool functions before registration.
 
+### Grok Build / cannot-bypass host
+
+```bash
+python examples/grok_host_wire.py
+# AdaptiveGate + AssuredToolDispatcher(adaptive=True): handlers only via call_tool
+```
+
+```python
+from mcp_assure.integrations import AssuredToolDispatcher
+host = AssuredToolDispatcher(engine, handlers, adaptive=True, source="grok-build")
+```
+
+Grok skill: `~/.grok/skills/mcp-assure/SKILL.md` (`/mcp-assure`).
+
 ### FastMCP middleware (`on_call_tool`)
 
 Requires `pip install "mcp-assure[fastmcp]"` (FastMCP ≥2.9):

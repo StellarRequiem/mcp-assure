@@ -89,3 +89,17 @@ result = gate.evaluate(ToolCall(tool="echo", arguments={"text": "ok"}))
 We **do** claim: re-runnable purple fixtures; deny-by-default static gate;
 proactive class-based arg blocks; adaptive campaign scoring with escalate/freeze
 hooks — verified by `pytest` and `python -m mcp_assure purple`.
+
+---
+
+## Append — 2026-07-28 ship state
+
+| Item | State |
+|------|--------|
+| Version | **0.3.0** on PyPI + GitHub (`ecc54b2`) |
+| CLI | `status` / `check` / `evaluate` / `campaign` |
+| CI | runs `mcp-assure check` |
+| Differentiation | `docs/VS_CODEX_SECURITY.md` |
+| Next product proof | one production host routing tools through AdaptiveGate |
+
+Cross-project closeout (leash 0.3.2 prove): see `~/browser-leash/docs/CAPABILITY_GAP.md` append + `~/ops/SUITE.md` append.
