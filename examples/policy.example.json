@@ -1,0 +1,26 @@
+{
+  "tools": {
+    "read_file": {
+      "description": "Read a workspace file",
+      "max_blast": 1,
+      "required_args": ["path"],
+      "allowed_args": ["path", "encoding"],
+      "forbidden_args": ["token", "password", "api_key"]
+    },
+    "http_get": {
+      "description": "GET an allowlisted URL resource",
+      "max_blast": 2,
+      "required_args": ["url"],
+      "allowed_args": ["url", "timeout"],
+      "require_resource": true,
+      "allowed_resources": ["https://api.example.com/", "https://httpbin.org/"]
+    },
+    "lab_probe": {
+      "description": "Lab-only synthetic probe (never production)",
+      "max_blast": 1,
+      "lab_only": true,
+      "required_args": ["target"],
+      "allowed_args": ["target"]
+    }
+  }
+}
