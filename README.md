@@ -20,6 +20,16 @@ pip install -e ".[dev]"    # from a checkout
 # later: pip install mcp-assure
 ```
 
+## Real host demo (local)
+
+Simulates an MCP host `tools/call` path with `AssuredToolDispatcher`:
+
+```bash
+python examples/host_demo.py
+```
+
+Expect: ALLOW for allowlisted tools, DENY for unknown tools / smuggled args, receipts verify.
+
 ## 60-second integration
 
 ```python
