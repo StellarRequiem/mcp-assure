@@ -1,4 +1,8 @@
-"""Hash-chained decision receipts — offline verifiable integrity."""
+"""Hash-chained decision receipts — offline verifiable integrity.
+
+Multi-writer safe: process-local lock + optional fcntl flock on a sidecar
+.lock file so MCP host + CLI proof suites do not race-break the chain.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +14,11 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from typing import Any
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover — non-POSIX
+    fcntl = None  # type: ignore
 
 GENESIS = "MCP_ASSURE_RECEIPT_GENESIS_v1"
 
@@ -61,10 +70,18 @@ class ReceiptChain:
                 os.makedirs(parent, exist_ok=True)
             self._load_tip(path)
 
+    def _lock_path(self) -> str | None:
+        if not self.path:
+            return None
+        return f"{self.path}.lock"
+
     def _load_tip(self, path: str) -> None:
         if not os.path.isfile(path):
+            self._prev = GENESIS
+            self._count = 0
             return
         last = None
+        n = 0
         try:
             with open(path, "r", encoding="utf-8") as f:
                 for line in f:
@@ -72,11 +89,15 @@ class ReceiptChain:
                     if not line:
                         continue
                     last = json.loads(line)
-                    self._count += 1
+                    n += 1
+            self._count = n
             if last and "hash" in last:
                 self._prev = last["hash"]
+            else:
+                self._prev = GENESIS
         except (OSError, json.JSONDecodeError):
             self._prev = GENESIS
+            self._count = 0
 
     def append(
         self,
@@ -90,39 +111,61 @@ class ReceiptChain:
         metadata: dict[str, Any] | None = None,
     ) -> Receipt:
         with self._lock:
-            rid = str(uuid.uuid4())
-            ts = time.time()
-            body = {
-                "id": rid,
-                "ts": ts,
-                "decision": decision,
-                "tool": tool,
-                "actor": actor,
-                "source": source,
-                "code": code,
-                "detail": detail,
-                "metadata": metadata or {},
-            }
-            digest = compute_hash(self._prev, body)
-            rec = Receipt(
-                id=rid,
-                ts=ts,
-                decision=decision,
-                tool=tool,
-                actor=actor,
-                source=source,
-                code=code,
-                detail=detail,
-                prev_hash=self._prev,
-                hash=digest,
-                metadata=metadata or {},
-            )
-            if self.path:
-                with open(self.path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(rec.to_dict(), sort_keys=True) + "\n")
-            self._prev = digest
-            self._count += 1
-            return rec
+            lock_f = None
+            try:
+                lp = self._lock_path()
+                if lp and fcntl is not None:
+                    lock_f = open(lp, "a+", encoding="utf-8")
+                    fcntl.flock(lock_f.fileno(), fcntl.LOCK_EX)
+                # Re-sync tip from disk so multi-process writers (MCP + cli proof)
+                # do not race-break the chain; also recovers after manual truncate.
+                if self.path:
+                    self._load_tip(self.path)
+                rid = str(uuid.uuid4())
+                ts = time.time()
+                body = {
+                    "id": rid,
+                    "ts": ts,
+                    "decision": decision,
+                    "tool": tool,
+                    "actor": actor,
+                    "source": source,
+                    "code": code,
+                    "detail": detail,
+                    "metadata": metadata or {},
+                }
+                digest = compute_hash(self._prev, body)
+                rec = Receipt(
+                    id=rid,
+                    ts=ts,
+                    decision=decision,
+                    tool=tool,
+                    actor=actor,
+                    source=source,
+                    code=code,
+                    detail=detail,
+                    prev_hash=self._prev,
+                    hash=digest,
+                    metadata=metadata or {},
+                )
+                if self.path:
+                    with open(self.path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(rec.to_dict(), sort_keys=True) + "\n")
+                        f.flush()
+                        try:
+                            os.fsync(f.fileno())
+                        except OSError:
+                            pass
+                self._prev = digest
+                self._count += 1
+                return rec
+            finally:
+                if lock_f is not None:
+                    try:
+                        if fcntl is not None:
+                            fcntl.flock(lock_f.fileno(), fcntl.LOCK_UN)
+                    finally:
+                        lock_f.close()
 
     @property
     def tip(self) -> str:
@@ -166,3 +209,42 @@ class ReceiptChain:
         except (OSError, json.JSONDecodeError, KeyError) as e:
             return False, f"parse error: {e}"
         return True, f"ok ({n} receipts)"
+
+    @staticmethod
+    def rotate_if_broken(
+        path: str,
+        *,
+        force: bool = False,
+    ) -> dict[str, Any]:
+        """Archive a broken (or force-rotated) chain and start empty.
+
+        Used by plane.receipts_rotate recovery when the live chain cannot verify.
+        Does not invent a forged genesis from stale tips — starts clean.
+        """
+        if not path:
+            return {"ok": False, "code": "NO_PATH"}
+        parent = os.path.dirname(os.path.abspath(path))
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        if not os.path.isfile(path):
+            # touch empty for a clean tip
+            open(path, "a", encoding="utf-8").close()
+            return {"ok": True, "code": "EMPTY", "detail": "no prior file; ready"}
+        ok, msg = ReceiptChain.verify_file(path)
+        if ok and not force:
+            return {"ok": True, "code": "INTACT", "detail": msg, "path": path}
+        ts = int(time.time())
+        archive = f"{path}.broken-{ts}"
+        try:
+            os.replace(path, archive)
+        except OSError as e:
+            return {"ok": False, "code": "ROTATE_FAILED", "detail": str(e)}
+        open(path, "a", encoding="utf-8").close()
+        return {
+            "ok": True,
+            "code": "ROTATED",
+            "path": path,
+            "archive": archive,
+            "was": msg if not ok else "force",
+            "detail": "archived prior chain; new empty chain at path",
+        }

@@ -10,6 +10,9 @@ against README and tests.
 | Deny-by-default tool authorization for agent tool calls | P1, P2 tests |
 | Policy can block by velocity, blast, lab flag, freeze, forbidden args | P5–P7, P10–P11 |
 | Decision receipts are hash-chained and tamper-detecting | P9 |
+| Receipt append re-syncs tip + flock for multi-writer hosts | `receipts.py` · `tests/test_receipts_chain.py` |
+| Broken chain does not grow further poison receipts | engine `skip_receipt` on CHAIN_BROKEN |
+| `rotate_if_broken` archives and starts empty tip | `ReceiptChain.rotate_if_broken` |
 | Model text cannot authorize a denied call | P8 |
 | Middleware does not execute tool on DENY/DRY_RUN | P3, P4 |
 | Zero runtime dependencies for the core package | `pyproject.toml` |

@@ -59,6 +59,7 @@ class AssureEngine:
         require_intact_chain: bool = True,
         freeze_path: str | None = None,
         freeze_allow: frozenset[str] | None = None,
+        chain_repair_allow: frozenset[str] | None = None,
     ) -> None:
         self.registry = registry or ToolPolicyRegistry()
         self.velocity = velocity or VelocityTracker()
@@ -67,9 +68,17 @@ class AssureEngine:
         self._chain_path = receipts_path
         self.freeze_path = freeze_path
         self.freeze_allow = freeze_allow or frozenset()
+        # Tools that may run when the receipt chain is broken (diagnose / rotate).
+        self.chain_repair_allow = chain_repair_allow or frozenset()
 
     def _chain_ok(self) -> tuple[bool, str]:
         if not self._chain_path or not os.path.isfile(self._chain_path):
+            return True, "empty_or_new"
+        # Empty or whitespace-only file is a clean tip (not broken).
+        try:
+            if os.path.getsize(self._chain_path) == 0:
+                return True, "empty_file"
+        except OSError:
             return True, "empty_or_new"
         return ReceiptChain.verify_file(self._chain_path)
 
@@ -91,12 +100,16 @@ class AssureEngine:
         # 1 chain
         ok, msg = self._chain_ok()
         if self.require_intact_chain and not ok:
-            return self._finish(
-                call,
-                Decision.DENY,
-                "CHAIN_BROKEN",
-                f"receipt chain integrity failure: {msg}",
-            )
+            if tool not in self.chain_repair_allow:
+                # Do not append more receipts onto a broken chain (avoids
+                # compounding line-1 prev_hash poison). Repair tools may proceed.
+                return self._finish(
+                    call,
+                    Decision.DENY,
+                    "CHAIN_BROKEN",
+                    f"receipt chain integrity failure: {msg}",
+                    skip_receipt=True,
+                )
 
         # 2 catalog
         if not tool:
@@ -233,6 +246,8 @@ class AssureEngine:
         code: str,
         detail: str,
         meta_extra: dict[str, Any] | None = None,
+        *,
+        skip_receipt: bool = False,
     ) -> Verdict:
         meta: dict[str, Any] = {
             "code": code,
@@ -244,15 +259,17 @@ class AssureEngine:
         }
         if meta_extra:
             meta.update(meta_extra)
-        rec = self.chain.append(
-            decision=decision.value,
-            tool=call.tool or "",
-            actor=call.actor,
-            source=call.source,
-            code=code,
-            detail=detail[:1000],
-            metadata=meta,
-        )
+        rec: Receipt | None = None
+        if not skip_receipt:
+            rec = self.chain.append(
+                decision=decision.value,
+                tool=call.tool or "",
+                actor=call.actor,
+                source=call.source,
+                code=code,
+                detail=detail[:1000],
+                metadata=meta,
+            )
         return Verdict(
             decision=decision,
             tool=call.tool or "",
