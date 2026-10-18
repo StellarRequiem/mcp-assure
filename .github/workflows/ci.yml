@@ -30,3 +30,20 @@ jobs:
           mcp-assure evaluate --tool echo --args-json '{"text":"ci"}' --pack baseline
       - name: Demo
         run: python -m mcp_assure demo
+
+  # Regression check on the external mcp-defense-bench corpus (dev + benign). Test-only, exact
+  # pins in tests/mcp_defense/requirements.txt; fails on lost attack denials or new benign
+  # denials vs tests/mcp_defense/baseline.json. See tests/mcp_defense/README.md.
+  mcp-defense:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]" -r tests/mcp_defense/requirements.txt
+      - name: mcp-defense-bench regression
+        run: pytest -rs tests/mcp_defense

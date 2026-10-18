@@ -1,0 +1,12 @@
+# Exact pins for the mcp-defense-bench regression job (.github/workflows/ci.yml, job mcp-defense).
+# Test-only: nothing here is a runtime dependency of mcp-assure.
+#
+# Scorer: mcp-defense-bench 0.3.0
+#   source https://github.com/Gowthaman90/mcp-defense-bench-py/tree/v0.3.0
+# Corpus: vendored inside the scorer wheel, bench v0.10.0 at commit
+#   8f0812572693fe883ed207b476e8523dabcb9787, MANIFEST.json sha256 checked in harness.py.
+mcp-defense-bench==0.3.0
+fastmcp==4.1.0
+fastmcp-slim==4.1.0
+mcp==2.3.0
+mcp-types==2.3.0
